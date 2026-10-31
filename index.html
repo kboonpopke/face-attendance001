@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#102d5c">
+  <title>CJL CNX | Passkey Attendance</title>
+  <style>
+    :root{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;color:#14243d;background:#eef3f9}
+    *{box-sizing:border-box}body{margin:0}button,input{font:inherit}
+    .app{max-width:480px;margin:auto;min-height:100vh;padding:20px 16px 36px}
+    header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+    .brand{font-size:12px;letter-spacing:1.4px;font-weight:900;color:#d52f3a}.brand strong{color:#163e78}
+    h1{font-size:26px;letter-spacing:-.7px;margin:5px 0 4px;color:#102d5c} .sub{color:#63758f;font-size:13px;margin:0}
+    .pill{background:#fff0ce;color:#8b5b00;font-weight:700;font-size:11px;border-radius:30px;padding:8px 10px}
+    .card{background:#fff;border-radius:22px;padding:20px;margin:14px 0;box-shadow:0 8px 28px #173d7510;border:1px solid #dce5f0}
+    .hero{background:linear-gradient(135deg,#10336c,#19569a);color:white;position:relative;overflow:hidden}
+    .hero:after{content:'';position:absolute;right:-35px;top:-45px;width:150px;height:150px;border:28px solid #ffffff13;border-radius:50%}
+    .eyebrow{font-size:12px;color:#c7dcf9;font-weight:700}.hero h2{font-size:23px;margin:8px 0}.hero p{color:#e2edfc;font-size:13px;line-height:1.6;margin:0}
+    .label{display:block;font-size:13px;font-weight:750;margin:0 0 8px;color:#26466f}
+    input{width:100%;padding:14px;border:1px solid #cdd9e8;border-radius:12px;background:#f8fafc;outline:none}
+    input:focus{border-color:#2563ad;box-shadow:0 0 0 3px #2563ad1a}
+    .actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    button{cursor:pointer;border:0;border-radius:13px;min-height:54px;padding:12px;font-weight:800}
+    .in{background:#154a8c;color:white}.out{background:#d52f3a;color:white}.secondary{background:#fff4d7;color:#674600;width:100%;margin-top:12px}
+    .section-title{font-weight:850;color:#17365e;margin:0 0 13px;font-size:16px}
+    .status{font-size:13px;line-height:1.65;padding:13px;border-radius:12px;background:#eef3f9;color:#385373;white-space:pre-wrap}
+    .status.ok{background:#e9f7ee;color:#17683c}.status.warn{background:#fff4da;color:#855400}
+    .status.error{background:#ffe9e9;color:#a52d35}
+    .note{font-size:12px;line-height:1.65;color:#6b7d94;margin:12px 0 0}
+    footer{text-align:center;color:#8b9aae;font-size:11px;margin-top:25px}
+  </style>
+</head>
+<body>
+<main class="app">
+  <header>
+    <div class="brand"><strong>CJ LOGISTICS</strong> · CNX</div>
+    <span class="pill">V1.0 · DEMO</span>
+  </header>
+  <h1>Passkey Attendance</h1>
+  <p class="sub">ระบบลงเวลาทำงานผ่านโทรศัพท์ส่วนตัว</p>
+
+  <section class="card hero">
+    <div class="eyebrow">SECURE MOBILE CHECK-IN</div>
+    <h2>ยืนยันตัวตนด้วย Passkey</h2>
+    <p>รองรับ Face ID, ลายนิ้วมือ หรือรหัสปลดล็อกที่อุปกรณ์อนุญาต โดยไม่เก็บภาพใบหน้าในเว็บไซต์</p>
+  </section>
+
+  <section class="card">
+    <h2 class="section-title">ข้อมูลพนักงาน</h2>
+    <label class="label" for="employeeId">Employee ID</label>
+    <input id="employeeId" placeholder="เช่น CNX001" autocomplete="off" maxlength="32">
+    <p class="note">ขณะนี้เป็นการกรอก ID เพื่อทดสอบหน้าจอ ยังไม่ได้ตรวจสอบข้อมูลพนักงาน</p>
+  </section>
+
+  <section class="card">
+    <h2 class="section-title">ลงเวลาทำงาน</h2>
+    <div class="actions">
+      <button class="in" id="inBtn">↳ เข้างาน (IN)</button>
+      <button class="out" id="outBtn">↗ ออกงาน (OUT)</button>
+    </div>
+    <button class="secondary" id="registerBtn">🔑 ลงทะเบียน Passkey</button>
+    <p class="note">ปุ่มเหล่านี้ยังไม่เรียกใช้การยืนยันตัวตนจริง จนกว่าจะเชื่อม WebAuthn Backend อย่างปลอดภัย</p>
+  </section>
+
+  <section class="card">
+    <h2 class="section-title">สถานะระบบ</h2>
+    <div id="status" class="status" role="status" aria-live="polite">กำลังตรวจสอบการรองรับ Passkey...</div>
+    <button class="secondary" id="checkBtn">ตรวจสอบอุปกรณ์อีกครั้ง</button>
+  </section>
+  <footer>CJL CNX · PASSKEY ATTENDANCE · FRONTEND DEMO</footer>
+</main>
+<script>
+  const statusEl = document.getElementById('status');
+  function showStatus(message, type='') {
+    statusEl.className = 'status ' + type;
+    statusEl.textContent = message;
+  }
+  async function checkSupport() {
+    if (!window.isSecureContext || !window.PublicKeyCredential) {
+      showStatus('อุปกรณ์หรือเบราว์เซอร์นี้ยังไม่พร้อมใช้ WebAuthn\nกรุณาเปิดผ่าน HTTPS บน Safari หรือ Chrome รุ่นที่รองรับ', 'error');
+      return;
+    }
+    try {
+      const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+      showStatus(available
+        ? '✓ เบราว์เซอร์รองรับ WebAuthn และมีตัวตรวจสอบตัวตนบนอุปกรณ์\nพร้อมเข้าสู่ขั้นตอนเชื่อม Backend'
+        : 'เบราว์เซอร์รองรับ WebAuthn แต่ยังไม่พบตัวตรวจสอบตัวตนบนอุปกรณ์\nอาจยังใช้ Passkey แบบอื่นได้ ขึ้นกับอุปกรณ์และการตั้งค่า', available ? 'ok' : 'warn');
+    } catch (e) {
+      showStatus('ตรวจสอบความพร้อมไม่ได้: ' + e.message, 'warn');
+    }
+  }
+  function demoOnly(action) {
+    const id = document.getElementById('employeeId').value.trim();
+    if (!id) { showStatus('กรุณากรอก Employee ID ก่อน', 'warn'); return; }
+    showStatus('โหมดทดลอง: ' + action + ' สำหรับ ' + id + '\nยังไม่มีการยืนยัน Passkey หรือบันทึกเวลาจริง\nขั้นต่อไปต้องเชื่อม Backend และตรวจสอบลายเซ็น WebAuthn', 'warn');
+  }
+  document.getElementById('registerBtn').addEventListener('click', () => demoOnly('ลงทะเบียน Passkey'));
+  document.getElementById('inBtn').addEventListener('click', () => demoOnly('เข้างาน IN'));
+  document.getElementById('outBtn').addEventListener('click', () => demoOnly('ออกงาน OUT'));
+  document.getElementById('checkBtn').addEventListener('click', checkSupport);
+  checkSupport();
+</script>
+</body>
+</html>
